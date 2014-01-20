@@ -23,7 +23,7 @@ class PhyUI(object):
         with pm.frameLayout('Physics', collapsable=True, cl=False, bs='out'):
             with pm.columnLayout(width=250):
                 pm.text(l='Collision Type:')
-                self.phyType = pm.radioButtonGrp(labelArray3=['Convex Hull(UCX)', 'Box Collison(UBX)', 'Sphere Collison(USX)'],
+                self.phyType = pm.radioButtonGrp(labelArray3=['Convex Hull(UCX)', 'Box Collison(UCX)'],
                                                  sl=0, nrb=2, cc=self._enableMaxVerts)
                 self.maxVerts = pm.intSliderGrp(field=True, l='Max Vertices:', v=32)
                 pm.button(l='Add Hull', w=250, c=self._addHull)
