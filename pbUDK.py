@@ -48,6 +48,9 @@ class PhyUI(object):
         hullNode.maxVertices.set(self.maxVerts.getValue())
         outputNode.getParent().setParent(sel[0])
 
+        # Move collsion to 0, 0, 0 due to it being parented
+        outputNode.getParent().translate.set(0, 0, 0)
+
     def boxHull(self):
         sel = pm.selected()
         bb = sel[0].getBoundingBox()
