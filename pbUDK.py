@@ -12,7 +12,7 @@ class UI(object):
                 # UI Sections
                 PhyUI()
                 FbxUI()
-                T3dUI()
+                # T3dUI()
 
                 # Render Window
                 window.show()
@@ -33,8 +33,6 @@ class PhyUI(object):
             self.convexHull()
         elif self.phyType.getSelect() == 2:
             self.boxHull()
-        else:
-            self.sphereHull()
 
     def convexHull(self):
         sel = pm.selected()
