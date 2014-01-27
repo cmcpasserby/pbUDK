@@ -6,7 +6,7 @@ class UI(object):
         if pm.window('pbudk', exists=True):
             pm.deleteUI('pbudk')
 
-        with pm.window('pbudk', title='pbUDK2', width=250, sizeable=False, mb=True, mbv=True, mnb=True, mxb=True) as window:
+        with pm.window('pbudk', title='pbUDK2', width=250, sizeable=False, mnb=True, mxb=True) as window:
             with pm.columnLayout() as self.wrapper:
 
                 # UI Sections
