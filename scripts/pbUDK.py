@@ -6,13 +6,12 @@ class UI(object):
         if pm.window('pbudk', exists=True):
             pm.deleteUI('pbudk')
 
-        with pm.window('pbudk', title='pbUDK2', width=250, sizeable=False) as window:
+        with pm.window('pbudk', title='pbUDK', width=250, sizeable=False) as window:
             with pm.columnLayout() as self.wrapper:
 
                 # UI Sections
                 PhyUI()
                 FbxUI()
-                # T3dUI()
 
                 # Render Window
                 window.show()
@@ -122,7 +121,8 @@ class FbxUI(object):
 
     def export(self, path, all=False, center=True, child=True):
         # Load the fbx Preset
-        pm.mel.FBXLoadExportPresetFile(f="C:/Users/User/Documents/maya/2012-x64/scripts/UDKexport/UDK-FBX.fbxexportpreset")
+        presetPath = '%s/UDKexport/UDK-FBX.fbxexportpreset' % pm.internalVar(usd=True)
+        pm.mel.FBXLoadExportPresetFile(f=presetPath)
         ext = '.fbx'
 
         if all:
