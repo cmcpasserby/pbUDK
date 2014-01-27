@@ -6,7 +6,7 @@ class UI(object):
         if pm.window('pbudk', exists=True):
             pm.deleteUI('pbudk')
 
-        with pm.window('pbudk', title='pbUDK2', width=250, sizeable=False, mnb=True, mxb=True) as window:
+        with pm.window('pbudk', title='pbUDK2', width=250, sizeable=False) as window:
             with pm.columnLayout() as self.wrapper:
 
                 # UI Sections
@@ -23,7 +23,7 @@ class PhyUI(object):
         with pm.frameLayout('Physics', collapsable=True, cl=False, bs='out'):
             with pm.columnLayout(width=250):
                 pm.text(l='Collision Type:')
-                self.phyType = pm.radioButtonGrp(labelArray2=['Convex Hull(UCX)', 'Box Collison(UCX)'],
+                self.phyType = pm.radioButtonGrp(labelArray2=['Convex Hull', 'Box Collison'],
                                                  sl=0, nrb=2, cc=self._enableMaxVerts)
                 self.maxVerts = pm.intSliderGrp(field=True, l='Max Vertices:', v=32)
                 pm.button(l='Add Hull', w=250, c=self._addHull)
@@ -36,18 +36,37 @@ class PhyUI(object):
 
     def convexHull(self):
         sel = pm.selected()
-        inputMesh = sel[0].getShape()
+        if not isinstance(sel[0], pm.nt.Transform):
+            oldSel = sel
+            sel = sel[0].node().getParent()
+        else:
+            sel = sel[0]
+
+        inputMesh = sel.getShape()
+
         hullNode = pm.createNode('DDConvexHull')
-        outputNode = pm.createNode('mesh', n='UCX_%sShape' % sel[0])
+        outputNode = pm.createNode('mesh', n='UCX_%sShape' % sel)
 
         pm.connectAttr('%s.outMesh' % inputMesh, '%s.input[0].inputPolymesh' % hullNode)
         pm.connectAttr('%s.output' % hullNode, '%s.inMesh' % outputNode)
 
         hullNode.maxVertices.set(self.maxVerts.getValue())
-        outputNode.getParent().setParent(sel[0])
-
-        # Move collsion to 0, 0, 0 due to it being parented
+        outputNode.getParent().setParent(sel)
         outputNode.getParent().translate.set(0, 0, 0)
+
+        if not isinstance(oldSel, pm.nt.Transform):
+            print 'test'
+            self.setComponents(oldSel, hullNode)
+
+    def comStr(self, sel):
+        comStr = []
+        for i in sel:
+            comStr.append(str(i.name().split('.')[1]))
+        return comStr
+
+    def setComponents(self, sel, hullNode):
+        coms = self.comStr(sel)
+        hullNode.input[0].inputComponents.set(len(coms), *coms, type='componentList')
 
     def boxHull(self):
         sel = pm.selected()
