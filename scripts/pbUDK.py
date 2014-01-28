@@ -24,7 +24,8 @@ class PhyUI(object):
                 pm.text(l='Collision Type:')
                 self.phyType = pm.radioButtonGrp(labelArray2=['Convex Hull', 'Box Collison'],
                                                  sl=0, nrb=2, cc=self._enableMaxVerts)
-                self.maxVerts = pm.intSliderGrp(field=True, l='Max Vertices:', v=32)
+                self.maxVerts = pm.intSliderGrp(field=True, l='Max Vertices:', v=32,
+                                                cl3=['left', 'left', 'left'], cw3=[64, 48, 128])
                 pm.button(l='Add Hull', w=250, c=self._addHull)
 
     def _addHull(self, *args):
