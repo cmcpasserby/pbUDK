@@ -157,63 +157,63 @@ class FbxUI(object):
         obj.translate.set(-1 * pos.x, -1 * pos.y, -1 * pos.z)
 
 
-class RefUI(object):
-    def __init__(self):
-        with pm.frameLayout('UDK Reference', collapsable=True, cl=False, bs='out'):
-            with pm.columnLayout(width=250):
-                pm.text(l='Reference Name:')
-                self.refName = pm.textField(w=250)
-                with pm.rowColumnLayout(nc=2, cw=[(1, 124), (2, 124)]):
-                    pm.button(l='Add/Set Reference', c=self._addRef)
-                    pm.button(l='Remove Reference', c=self._removeRef)
-
-    def _addRef(self, *args):
-        sel = pm.selected()
-        if len(sel) != 0:
-            for item in sel:
-                try:
-                    item.T3DTag.set(self.refName.getText())
-                except:
-                    item.addAttr('T3DTag', dt='string')
-                    item.T3DTag.set(self.refName.getText())
-        else:
-            pm.warning('Select at least one polygon object')
-
-    def _removeRef(self, *args):
-        sel = pm.selected()
-        if len(sel) != 0:
-            for item in sel:
-                try:
-                    item.T3DTag.delete()
-                except:
-                    pm.warning('No Tag to delete!')
-        else:
-            pm.warning('Select at least one polygon object!')
-
-
-class T3dUI(object):
-    def __init__(self):
-        with pm.frameLayout('Export Transformations (.T3D)', collapsable=True, cl=False, bs='out'):
-            with pm.columnLayout(width=250):
-                pm.text(l='Export Path:')
-                with pm.rowColumnLayout(nc=2, cw=[(1, 215), (2, 32)]):
-                    self.t3dPath = pm.textField()
-                    pm.button(l='...', c=self._path)
-                pm.text(l='Map Name:')
-                self.mapName = pm.textField(w=250)
-                pm.button(l='Export Level', w=250, c=self._export)
-
-        # Path Set
-        self.t3dPath.setText(pm.workspace(q=True, rd=True) + 'data/UDKexport.t3d')
-
-    def _path(self, *args):
-        path = self.t3dPath.getText()
-        filters = "Unreal Text (*.t3d)"
-        path = pm.fileDialog2(dir=path, fm=0, ff=filters, cap='Set T3D Location')
-        try:
-            self.t3dPath.setText(path[0])
-        except TypeError:
-            pass
-
-    def _export(self, *args):
-        pass
+# class RefUI(object):
+#     def __init__(self):
+#         with pm.frameLayout('UDK Reference', collapsable=True, cl=False, bs='out'):
+#             with pm.columnLayout(width=250):
+#                 pm.text(l='Reference Name:')
+#                 self.refName = pm.textField(w=250)
+#                 with pm.rowColumnLayout(nc=2, cw=[(1, 124), (2, 124)]):
+#                     pm.button(l='Add/Set Reference', c=self._addRef)
+#                     pm.button(l='Remove Reference', c=self._removeRef)
+#
+#     def _addRef(self, *args):
+#         sel = pm.selected()
+#         if len(sel) != 0:
+#             for item in sel:
+#                 try:
+#                     item.T3DTag.set(self.refName.getText())
+#                 except:
+#                     item.addAttr('T3DTag', dt='string')
+#                     item.T3DTag.set(self.refName.getText())
+#         else:
+#             pm.warning('Select at least one polygon object')
+#
+#     def _removeRef(self, *args):
+#         sel = pm.selected()
+#         if len(sel) != 0:
+#             for item in sel:
+#                 try:
+#                     item.T3DTag.delete()
+#                 except:
+#                     pm.warning('No Tag to delete!')
+#         else:
+#             pm.warning('Select at least one polygon object!')
+#
+#
+# class T3dUI(object):
+#     def __init__(self):
+#         with pm.frameLayout('Export Transformations (.T3D)', collapsable=True, cl=False, bs='out'):
+#             with pm.columnLayout(width=250):
+#                 pm.text(l='Export Path:')
+#                 with pm.rowColumnLayout(nc=2, cw=[(1, 215), (2, 32)]):
+#                     self.t3dPath = pm.textField()
+#                     pm.button(l='...', c=self._path)
+#                 pm.text(l='Map Name:')
+#                 self.mapName = pm.textField(w=250)
+#                 pm.button(l='Export Level', w=250, c=self._export)
+#
+#         # Path Set
+#         self.t3dPath.setText(pm.workspace(q=True, rd=True) + 'data/UDKexport.t3d')
+#
+#     def _path(self, *args):
+#         path = self.t3dPath.getText()
+#         filters = "Unreal Text (*.t3d)"
+#         path = pm.fileDialog2(dir=path, fm=0, ff=filters, cap='Set T3D Location')
+#         try:
+#             self.t3dPath.setText(path[0])
+#         except TypeError:
+#             pass
+#
+#     def _export(self, *args):
+#         pass
