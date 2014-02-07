@@ -137,9 +137,10 @@ class FbxUI(object):
                     self.fbxPath = pm.textField(text=self.opts.fbxPath)
                     pm.button(l='...', c=self._path)
 
-                with pm.rowColumnLayout(nc=2):
+                with pm.rowColumnLayout(nc=3):
                     self.center = pm.checkBox(label='Move to Orgin', v=self.opts.center, cc=self.saveOptions)
                     self.child = pm.checkBox(label='Export Childern', v=self.opts.child, cc=self.saveOptions)
+                    pm.button(l='FBXPreset', c=self._fbxPreset)
 
                 with pm.rowColumnLayout(nc=2, cw=[(1, 124), (2, 124)]):
                     pm.button(l='Selected', c=self._selected)
@@ -160,10 +161,14 @@ class FbxUI(object):
     def _all(self, *args):
         self.export(self.fbxPath.getText(), all=True, center=self.center.getValue(), child=self.child.getValue())
 
+    def _fbxPreset(self, *args):
+        self.opts.presetFile = path(pm.fileDialog2(dir=self.opts.presetFile.parent, fm=1, okc='Select Preset File',
+                                                   cap='Select FBXExportPreset File', ff='FBX export presets (*.fbxexportpreset)'))
+        self.saveOptions()
+
     def export(self, path, all=False, center=True, child=True):
         # Load the fbx Preset
-        presetPath = '%s/UDKexport/UDK-FBX.fbxexportpreset' % pm.internalVar(usd=True)
-        pm.mel.FBXLoadExportPresetFile(f=presetPath)
+        pm.mel.FBXLoadExportPresetFile(f=self.opts.presetFile)
         ext = '.fbx'
 
         if all:
