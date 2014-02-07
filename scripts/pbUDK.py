@@ -25,6 +25,7 @@ class Options(object):
     def __init__(self):
         self.optionsVersion = 1.0
         self.dumpPath = path('%s/pbUDK.conf' % pm.internalVar(usd=True))
+
         # Physics options
         self.phyType = 1
         self.maxVerts = 32
