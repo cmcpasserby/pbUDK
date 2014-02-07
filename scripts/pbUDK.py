@@ -1,3 +1,5 @@
+from pymel.util.common import path
+import pickle
 import pymel.core as pm
 
 
@@ -10,22 +12,58 @@ class UI(object):
             with pm.columnLayout() as self.wrapper:
 
                 # UI Sections
-                PhyUI()
-                FbxUI()
+                opts = Options()
+                opts = opts.load()
+                PhyUI(opts)
+                FbxUI(opts)
 
                 # Render Window
                 window.show()
 
 
-class PhyUI(object):
+class Options(object):
     def __init__(self):
+        self.dumpPath = path('%s/pbUDK.conf' % pm.internalVar(usd=True))
+        # Physics options
+        self.phyType = 1
+        self.maxVerts = 32
+
+        # FBX options
+        self.presetFile = path('%s/UDKexport/UDK-FBX.fbxexportpreset' % pm.internalVar(usd=True))
+        self.fbxPath = path('%sdata/' % pm.workspace(q=True, rd=True))
+        self.center = True
+        self.child = True
+
+    def dump(self):
+        try:
+            with open(self.dumpPath, 'wb') as dumpFile:
+                pickle.dump(self, dumpFile)
+        except:
+            pass
+
+    def load(self):
+        try:
+            if self.dumpPath.exists():
+                with open(self.dumpPath, 'rb') as dumpFile:
+                    return pickle.load(dumpFile)
+            else:
+                self.dump()
+                return self
+        except:
+            pass
+
+
+class PhyUI(object):
+    def __init__(self, opts):
+        self.opts = opts
         with pm.frameLayout('Physics', collapsable=True, cl=False, bs='out'):
             with pm.columnLayout(width=250):
                 pm.text(l='Collision Type:')
                 self.phyType = pm.radioButtonGrp(labelArray2=['Convex Hull', 'Box Collison'],
-                                                 sl=0, nrb=2, cc=self._enableMaxVerts)
-                self.maxVerts = pm.intSliderGrp(field=True, l='Max Vertices:', v=32,
-                                                cl3=['left', 'left', 'left'], cw3=[64, 48, 128])
+                                                 sl=self.opts.phyType, nrb=2, cc=self._enableMaxVerts)
+                self.maxVerts = pm.intSliderGrp(field=True, l='Max Vertices:', v=self.opts.maxVerts,
+                                                cl3=['left', 'left', 'left'], cw3=[64, 48, 128],
+                                                cc=self.saveOptions)
                 pm.button(l='Add Hull', w=250, c=self._addHull)
 
     def _addHull(self, *args):
@@ -36,10 +74,13 @@ class PhyUI(object):
 
     def convexHull(self):
         sel = pm.selected()
+        print sel
         if not isinstance(sel[0], pm.nt.Transform):
             oldSel = sel
             sel = sel[0].node().getParent()
+            print sel
         else:
+            oldSel = sel
             sel = sel[0]
 
         inputMesh = sel.getShape()
@@ -54,8 +95,7 @@ class PhyUI(object):
         outputNode.getParent().setParent(sel)
         outputNode.getParent().translate.set(0, 0, 0)
 
-        if not isinstance(oldSel, pm.nt.Transform):
-            print 'test'
+        if not isinstance(oldSel[0], pm.nt.Transform):
             self.setComponents(oldSel, hullNode)
 
     def comStr(self, sel):
@@ -84,15 +124,23 @@ class PhyUI(object):
             self.maxVerts.setEnable(True)
         else:
             self.maxVerts.setEnable(False)
+        self.saveOptions()
+
+    def saveOptions(self, *args):
+        self.opts.phyType = self.phyType.getSelect()
+        self.opts.maxVerts = self.maxVerts.getValue()
+
+        self.opts.dump()
 
 
 class FbxUI(object):
-    def __init__(self):
+    def __init__(self, opts):
+        self.opts = opts
         with pm.frameLayout('Export Meshes (.FBX)', collapsable=True, cl=False, bs='out'):
             with pm.columnLayout(width=250):
                 pm.text(l='Export Path:')
                 with pm.rowColumnLayout(nc=2, cw=[(1, 215), (2, 32)]):
-                    self.fbxPath = pm.textField()
+                    self.fbxPath = pm.textField(text=self.opts.fbxPath)
                     pm.button(l='...', c=self._path)
 
                 with pm.rowColumnLayout(nc=2):
@@ -102,9 +150,6 @@ class FbxUI(object):
                 with pm.rowColumnLayout(nc=2, cw=[(1, 124), (2, 124)]):
                     pm.button(l='Selected', c=self._selected)
                     pm.button(l='All', c=self._all)
-
-        # Path Set
-        self.fbxPath.setText(pm.workspace(q=True, rd=True) + 'data/')
 
     def _path(self, *args):
         path = self.fbxPath.getText()
@@ -155,6 +200,9 @@ class FbxUI(object):
         pm.makeIdentity(apply=True, t=True, r=True, s=True, n=False)
         pos = obj.getRotatePivot()
         obj.translate.set(-1 * pos.x, -1 * pos.y, -1 * pos.z)
+
+    def saveOptions(self):
+        pass
 
 
 # class RefUI(object):
