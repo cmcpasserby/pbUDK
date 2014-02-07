@@ -23,6 +23,7 @@ class UI(object):
 
 class Options(object):
     def __init__(self):
+        self.optionsVersion = 1.0
         self.dumpPath = path('%s/pbUDK.conf' % pm.internalVar(usd=True))
         # Physics options
         self.phyType = 1
@@ -60,7 +61,7 @@ class PhyUI(object):
             with pm.columnLayout(width=250):
                 pm.text(l='Collision Type:')
                 self.phyType = pm.radioButtonGrp(labelArray2=['Convex Hull', 'Box Collison'],
-                                                 sl=self.opts.phyType, nrb=2, cc=self._enableMaxVerts)
+                                                 sl=self.opts.phyType, nrb=2, cc=self.saveOptions)
                 self.maxVerts = pm.intSliderGrp(field=True, l='Max Vertices:', v=self.opts.maxVerts,
                                                 cl3=['left', 'left', 'left'], cw3=[64, 48, 128],
                                                 cc=self.saveOptions)
@@ -119,17 +120,9 @@ class PhyUI(object):
         sg.remove(hull[0].getShape())
         hull[0].setParent(sel[0])
 
-    def _enableMaxVerts(self, *args):
-        if self.phyType.getSelect() == 1:
-            self.maxVerts.setEnable(True)
-        else:
-            self.maxVerts.setEnable(False)
-        self.saveOptions()
-
     def saveOptions(self, *args):
         self.opts.phyType = self.phyType.getSelect()
         self.opts.maxVerts = self.maxVerts.getValue()
-
         self.opts.dump()
 
 
@@ -144,8 +137,8 @@ class FbxUI(object):
                     pm.button(l='...', c=self._path)
 
                 with pm.rowColumnLayout(nc=2):
-                    self.center = pm.checkBox(label='Move to Orgin', v=True)
-                    self.child = pm.checkBox(label='Export Childern', v=True)
+                    self.center = pm.checkBox(label='Move to Orgin', v=self.opts.center, cc=self.saveOptions)
+                    self.child = pm.checkBox(label='Export Childern', v=self.opts.child, cc=self.saveOptions)
 
                 with pm.rowColumnLayout(nc=2, cw=[(1, 124), (2, 124)]):
                     pm.button(l='Selected', c=self._selected)
@@ -158,6 +151,7 @@ class FbxUI(object):
             self.fbxPath.setText(path[0])
         except TypeError:
             pass
+        self.saveOptions()
 
     def _selected(self, *args):
         self.export(self.fbxPath.getText(), all=False, center=self.center.getValue(), child=self.child.getValue())
@@ -201,5 +195,8 @@ class FbxUI(object):
         pos = obj.getRotatePivot()
         obj.translate.set(-1 * pos.x, -1 * pos.y, -1 * pos.z)
 
-    def saveOptions(self):
-        pass
+    def saveOptions(self, *args):
+        self.opts.center = self.center.getValue()
+        self.opts.child = self.child.getValue()
+        self.opts.fbxPath = self.fbxPath.getText()
+        self.opts.dump()
