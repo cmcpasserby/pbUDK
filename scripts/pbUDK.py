@@ -1,4 +1,5 @@
 from pymel.util.common import path
+import os
 import pickle
 import pymel.core as pm
 
@@ -132,6 +133,13 @@ class FbxUI(object):
         self.opts = opts
         with pm.frameLayout('Export Meshes (.FBX)', collapsable=True, cl=False, bs='out'):
             with pm.columnLayout(width=250):
+                pm.text(l='Export List:')
+                pm.separator(height=4)
+                self.meshList = pm.textScrollList(height=120, width=250, ams=True, dkc=self._remove)
+                with pm.rowColumnLayout(nc=2, cw=[(1, 124), (2, 124)]):
+                    pm.button(l='Add', c=self._add)
+                    pm.button(l='Remove', c=self._remove)
+
                 pm.text(l='Export Path:')
                 with pm.rowColumnLayout(nc=2, cw=[(1, 215), (2, 32)]):
                     self.fbxPath = pm.textField(text=self.opts.fbxPath)
@@ -146,11 +154,13 @@ class FbxUI(object):
                     pm.button(l='Selected', c=self._selected)
                     pm.button(l='All', c=self._all)
 
+        self._refresh()
+
     def _path(self, *args):
-        path = self.fbxPath.getText()
-        path = pm.fileDialog2(dir=path, fm=3, okc='Select Folder', cap='Select Export Folder')
+        exportPath = path(self.fbxPath.getText())
+        exportPath = path(pm.fileDialog2(dir=path, fm=3, okc='Select Folder', cap='Select Export Folder')[0])
         try:
-            self.fbxPath.setText(path[0])
+            self.fbxPath.setText(exportPath)
         except TypeError:
             pass
         self.saveOptions()
@@ -163,8 +173,32 @@ class FbxUI(object):
 
     def _fbxPreset(self, *args):
         self.opts.presetFile = path(pm.fileDialog2(dir=self.opts.presetFile.parent, fm=1, okc='Select Preset File',
-                                                   cap='Select FBXExportPreset File', ff='FBX export presets (*.fbxexportpreset)'))
+                                                   cap='Select FBXExportPreset File', ff='FBX export presets (*.fbxexportpreset)')[0])
         self.saveOptions()
+
+    def _add(self, *args):
+        sel = pm.selected()
+        for i in sel:
+            try:
+                i.pbExport.set(True)
+            except:
+                i.addAttr('pbExport', at='bool')
+                i.pbExport.set(True)
+        self._refresh()
+
+    def _remove(self, *args):
+        sel = self.meshList.getSelectItem()
+        for i in sel:
+            i = pm.PyNode(i)
+            i.pbExport.delete()
+        self._refresh()
+
+    def _refresh(self):
+        self.meshList.removeAll()
+        sel = pm.ls(type=pm.nt.Mesh)
+        for i in sel:
+            if hasattr(i.getParent(), 'pbExport'):
+                self.meshList.append(i.getParent())
 
     def export(self, path, all=False, center=True, child=True):
         # Load the fbx Preset
@@ -172,7 +206,7 @@ class FbxUI(object):
         ext = '.fbx'
 
         if all:
-            pm.select(ado=True)
+            pm.select(self.meshList.getAllItems())
             sel = pm.selected()
         else:
             sel = pm.selected()
@@ -185,7 +219,7 @@ class FbxUI(object):
                 if center:
                     oldLoc = obj.getRotatePivot()
                     self.centerPiv(obj)
-                exportPath = path + obj.name() + ext
+                exportPath = path + os.sep + obj.name() + ext
                 if child:
                     children = obj.getChildren()
                     for i in children:
