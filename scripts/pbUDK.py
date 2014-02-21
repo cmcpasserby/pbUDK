@@ -197,7 +197,7 @@ class FbxUI(object):
         self.meshList.removeAll()
         sel = pm.ls(type=pm.nt.Mesh)
         for i in sel:
-            if hasattr(i.getParent(), 'pbExport'):
+            if hasattr(i.getParent(), 'pbExport') and i.getParent().pbExport.get() is True:
                 self.meshList.append(i.getParent())
 
     def export(self, path, all=False, center=True, child=True):
