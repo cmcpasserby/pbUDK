@@ -1,6 +1,6 @@
 from pymel.util.common import path
 import os
-import pickle
+import json
 import pymel.core as pm
 
 
@@ -9,51 +9,50 @@ class UI(object):
         if pm.window('pbudk', exists=True):
             pm.deleteUI('pbudk')
 
-        with pm.window('pbudk', title='pbUDK', width=250, sizeable=False) as window:
+        with pm.window('pbudk', title='Unreal PipeLine', width=250, sizeable=False) as window:
             with pm.columnLayout() as self.wrapper:
-
-                # UI Sections
-                opts = Options()
-                opts = opts.load()
+                opts = JSONDict()
                 PhyUI(opts)
                 FbxUI(opts)
 
-                # Render Window
                 window.show()
 
 
-class Options(object):
-    def __init__(self):
-        self.optionsVersion = 1.0
-        self.dumpPath = path('%s/pbUDK.conf' % pm.internalVar(usd=True))
+class JSONDict(dict):
+    def __init__(self, *args, **kwargs):
+        self.path = '%s/pbUDK.json' % pm.internalVar(usd=True)
+        self.update(*args, **kwargs)
+        self.defaultData = {'phyType': 1,
+                            'maxVerts': 32,
+                            'center': True,
+                            'child': True,
+                            'fbxPath': '%sdata/' % pm.workspace(q=True, rd=True),
+                            'presetFile': '%s/UDKexport/UDK-FBX.fbxexportpreset' % pm.internalVar(usd=True)}
 
-        # Physics options
-        self.phyType = 1
-        self.maxVerts = 32
+    def __getitem__(self, key):
+        if not os.path.isfile(self.path):
+            with open(self.path, 'w') as f:
+                json.dump(self.defaultData, f, sort_keys=True, indent=4)
 
-        # FBX options
-        self.presetFile = path('%s/UDKexport/UDK-FBX.fbxexportpreset' % pm.internalVar(usd=True))
-        self.fbxPath = path('%sdata/' % pm.workspace(q=True, rd=True))
-        self.center = True
-        self.child = True
+        with open(self.path, 'r') as f:
+            data = json.load(f)
+            return data[key]
 
-    def dump(self):
-        try:
-            with open(self.dumpPath, 'wb') as dumpFile:
-                pickle.dump(self, dumpFile)
-        except:
-            pass
+    def __setitem__(self, key, value):
+        with open(self.path, 'r') as f:
+            data = json.load(f)
+            if value != data[key]:
+                data[key] = value
+                print data[key]
+                # json.dump(data, f, sort_keys=True, indent=4)
 
-    def load(self):
-        try:
-            if self.dumpPath.exists():
-                with open(self.dumpPath, 'rb') as dumpFile:
-                    return pickle.load(dumpFile)
-            else:
-                self.dump()
-                return self
-        except:
-            pass
+    def __repr__(self):
+        dictrepr = dict.__repr__(self)
+        return '%s(%S)' % (type(self).__name__, dictrepr)
+
+    # def update(self, *args, **kwargs):
+    #     for k, v in dict(*args, **kwargs).iteritems():
+    #         self[k] = v
 
 
 class PhyUI(object):
@@ -63,10 +62,9 @@ class PhyUI(object):
             with pm.columnLayout(width=250):
                 pm.text(l='Collision Type:')
                 self.phyType = pm.radioButtonGrp(labelArray2=['Convex Hull', 'Box Collison'],
-                                                 sl=self.opts.phyType, nrb=2, cc=self.saveOptions)
-                self.maxVerts = pm.intSliderGrp(field=True, l='Max Vertices:', v=self.opts.maxVerts,
-                                                cl3=['left', 'left', 'left'], cw3=[64, 48, 128],
-                                                cc=self.saveOptions)
+                                                 sl=self.opts['phyType'], nrb=2, cc=self.save)
+                self.maxVerts = pm.intSliderGrp(field=True, l='Max Vertices:', v=self.opts['maxVerts'],
+                                                cl3=['left', 'left', 'left'], cw3=[64, 48, 128], cc=self.save)
                 pm.button(l='Add Hull', w=250, c=self._addHull)
 
     def _addHull(self, *args):
@@ -122,10 +120,9 @@ class PhyUI(object):
         sg.remove(hull[0].getShape())
         hull[0].setParent(sel[0])
 
-    def saveOptions(self, *args):
-        self.opts.phyType = self.phyType.getSelect()
-        self.opts.maxVerts = self.maxVerts.getValue()
-        self.opts.dump()
+    def save(self, *args):
+        self.opts['phyType'] = self.phyType.getSelect()
+        self.opts['maxVerts'] = self.maxVerts.getValue()
 
 
 class FbxUI(object):
@@ -142,12 +139,12 @@ class FbxUI(object):
 
                 pm.text(l='Export Path:')
                 with pm.rowColumnLayout(nc=2, cw=[(1, 215), (2, 32)]):
-                    self.fbxPath = pm.textField(text=self.opts.fbxPath)
+                    self.fbxPath = pm.textField(text=self.opts['fbxPath'])
                     pm.button(l='...', c=self._path)
 
                 with pm.rowColumnLayout(nc=3):
-                    self.center = pm.checkBox(label='Move to Orgin', v=self.opts.center, cc=self.saveOptions)
-                    self.child = pm.checkBox(label='Export Childern', v=self.opts.child, cc=self.saveOptions)
+                    self.center = pm.checkBox(label='Move to Orgin', v=self.opts['center'])
+                    self.child = pm.checkBox(label='Export Childern', v=self.opts['child'])
                     pm.button(l='FBXPreset', c=self._fbxPreset)
 
                 with pm.rowColumnLayout(nc=2, cw=[(1, 124), (2, 124)]):
@@ -157,13 +154,11 @@ class FbxUI(object):
         self._refresh()
 
     def _path(self, *args):
-        exportPath = path(self.fbxPath.getText())
         exportPath = path(pm.fileDialog2(dir=path, fm=3, okc='Select Folder', cap='Select Export Folder')[0])
         try:
             self.fbxPath.setText(exportPath)
         except TypeError:
             pass
-        self.saveOptions()
 
     def _selected(self, *args):
         self.export(self.fbxPath.getText(), all=False, center=self.center.getValue(), child=self.child.getValue())
@@ -172,9 +167,10 @@ class FbxUI(object):
         self.export(self.fbxPath.getText(), all=True, center=self.center.getValue(), child=self.child.getValue())
 
     def _fbxPreset(self, *args):
-        self.opts.presetFile = path(pm.fileDialog2(dir=self.opts.presetFile.parent, fm=1, okc='Select Preset File',
-                                                   cap='Select FBXExportPreset File', ff='FBX export presets (*.fbxexportpreset)')[0])
-        self.saveOptions()
+        tempData = pm.fileDialog2(dir=path(self.opts['presetFile']).parent, fm=1, okc='Select Preset File',
+                                  cap='Sselect FPXExportPreset File', ff='FBX Export Presets (*.fbxexportpreset)')
+        if tempData:
+            self.opts['presetFile'] = tempData[0]
 
     def _add(self, *args):
         sel = pm.selected()
@@ -202,7 +198,7 @@ class FbxUI(object):
 
     def export(self, path, all=False, center=True, child=True):
         # Load the fbx Preset
-        pm.mel.FBXLoadExportPresetFile(f=self.opts.presetFile)
+        pm.mel.FBXLoadExportPresetFile(f=self.opts.data['presetFile'])
         ext = '.fbx'
 
         if all:
@@ -235,8 +231,7 @@ class FbxUI(object):
         pos = obj.getRotatePivot()
         obj.translate.set(-1 * pos.x, -1 * pos.y, -1 * pos.z)
 
-    def saveOptions(self, *args):
-        self.opts.center = self.center.getValue()
-        self.opts.child = self.child.getValue()
-        self.opts.fbxPath = self.fbxPath.getText()
-        self.opts.dump()
+    def save(self, *args):
+        self.opts['center'] = self.center.getValue()
+        self.opts['child'] = self.child.getValue()
+        self.opts['fbxPath'] = self.fbxPath.getText()
