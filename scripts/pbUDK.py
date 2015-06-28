@@ -9,7 +9,7 @@ class UI(object):
         if pm.window('pbudk', exists=True):
             pm.deleteUI('pbudk')
 
-        with pm.window('pbudk', title='pbUDK', width=250, sizeable=False) as window:
+        with pm.window('pbudk', title='Unreal Pipeline', width=250, sizeable=False) as window:
             with pm.columnLayout() as self.wrapper:
 
                 # UI Sections
