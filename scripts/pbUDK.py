@@ -3,6 +3,8 @@ import os
 import json
 import pymel.core as pm
 
+# Patch for the broken getTransform in older pymel versions
+pm.nt.Shape.getTransform = lambda x: x.getParent(generations=1)
 
 title = 'Unreal Pipeline'
 version = '1.02'
