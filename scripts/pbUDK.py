@@ -10,71 +10,25 @@ title = 'Unreal Pipeline'
 version = '1.02'
 
 
-class UI(object):
-    def __init__(self):
-        if pm.window('pbudk', exists=True):
-            pm.deleteUI('pbudk')
+def UI():
+    if pm.window('pbudk', exists=True):
+        pm.deleteUI('pbudk')
 
-        optspath = '%s/pbUDK.json' % pm.internalVar(usd=True)
-        defaultdata = {'phyType': 1,
-                       'maxVerts': 32,
-                       'center': True,
-                       'child': True,
-                       'fbxPath': '%sdata/' % pm.workspace(q=True, rd=True),
-                       'presetFile': '%s/UDKexport/UDK-FBX.fbxexportpreset' % pm.internalVar(usd=True),
-                       'version': version}
+    optspath = '%s/pbUDK.json' % pm.internalVar(usd=True)
+    defaultdata = {'phyType': 1,
+                   'maxVerts': 32,
+                   'center': True,
+                   'child': True,
+                   'fbxPath': '%sdata/' % pm.workspace(q=True, rd=True),
+                   'presetFile': '%s/UDKexport/UDK-FBX.fbxexportpreset' % pm.internalVar(usd=True),
+                   'version': version}
 
-        with pm.window('pbudk', title="{0} - {1}".format(title, version), width=250, sizeable=False) as window:
-            with pm.columnLayout() as self.wrapper:
-                opts = JSONDict(optspath, defaultdata)
-                self.phyui = PhyUI(opts)
-                self.fbxui = FbxUI(opts)
-            window.show()
-
-
-class JSONDict(dict):
-    def __init__(self, filename, defaults, *args, **kwargs):
-        super(JSONDict, self).__init__(**kwargs)
-        self.filename = filename
-        self.defaults = defaults
-        self._load()
-        self.update(*args, **kwargs)
-
-    def _load(self):
-        if os.path.isfile(self.filename) and os.path.getsize(self.filename) > 0:
-            with open(self.filename, 'r') as f:
-                data = json.load(f)
-                if 'version' in data and data['version'] == '1.02':
-                    self.update(data)
-                else:
-                    self._dumpdefaults()
-        else:
-            self._dumpdefaults()
-
-    def _dump(self):
-        with open(self.filename, 'w') as f:
-            json.dump(self, f, sort_keys=True, indent=4)
-
-    def _dumpdefaults(self):
-        with open(self.filename, 'w') as f:
-            json.dump(self.defaults, f, sort_keys=True, indent=4)
-        self._load()
-
-    def __getitem__(self, key):
-        return dict.__getitem__(self, key)
-
-    def __setitem__(self, key, value):
-        dict.__setitem__(self, key, value)
-        self._dump()
-
-    def __repr__(self):
-        dictrepr = dict.__repr__(self)
-        return '%s(%s)' % (type(self).__name__, dictrepr)
-
-    def update(self, *args, **kwargs):
-        for k, v in dict(*args, **kwargs).items():
-            self[k] = v
-        self._dump()
+    with pm.window('pbudk', title="{0} - {1}".format(title, version), width=250, sizeable=False) as window:
+        with pm.columnLayout():
+            opts = JSONDict(optspath, defaultdata)
+            PhyUI(opts)
+            FbxUI(opts)
+        window.show()
 
 
 class PhyUI(object):
@@ -281,3 +235,48 @@ class FbxUI(object):
         self.opts['center'] = self.center.getValue()
         self.opts['child'] = self.child.getValue()
         self.opts['fbxPath'] = self.fbxPath.getText()
+
+
+class JSONDict(dict):
+    def __init__(self, filename, defaults, *args, **kwargs):
+        super(JSONDict, self).__init__(**kwargs)
+        self.filename = filename
+        self.defaults = defaults
+        self._load()
+        self.update(*args, **kwargs)
+
+    def _load(self):
+        if os.path.isfile(self.filename) and os.path.getsize(self.filename) > 0:
+            with open(self.filename, 'r') as f:
+                data = json.load(f)
+                if 'version' in data and data['version'] == '1.02':
+                    self.update(data)
+                else:
+                    self._dumpdefaults()
+        else:
+            self._dumpdefaults()
+
+    def _dump(self):
+        with open(self.filename, 'w') as f:
+            json.dump(self, f, sort_keys=True, indent=4)
+
+    def _dumpdefaults(self):
+        with open(self.filename, 'w') as f:
+            json.dump(self.defaults, f, sort_keys=True, indent=4)
+        self._load()
+
+    def __getitem__(self, key):
+        return dict.__getitem__(self, key)
+
+    def __setitem__(self, key, value):
+        dict.__setitem__(self, key, value)
+        self._dump()
+
+    def __repr__(self):
+        dictrepr = dict.__repr__(self)
+        return '%s(%s)' % (type(self).__name__, dictrepr)
+
+    def update(self, *args, **kwargs):
+        for k, v in dict(*args, **kwargs).items():
+            self[k] = v
+        self._dump()
