@@ -27,10 +27,9 @@ class UI(object):
         with pm.window('pbudk', title="{0} - {1}".format(title, version), width=250, sizeable=False) as window:
             with pm.columnLayout() as self.wrapper:
                 opts = JSONDict(optspath, defaultdata)
-                PhyUI(opts)
-                FbxUI(opts)
-
-                window.show()
+                self.phyui = PhyUI(opts)
+                self.fbxui = FbxUI(opts)
+            window.show()
 
 
 class JSONDict(dict):
@@ -84,21 +83,25 @@ class PhyUI(object):
         with pm.frameLayout('Physics', collapsable=True, cl=False, bs='out'):
             with pm.columnLayout(width=250):
                 pm.text(l='Collision Type:')
-                self.phyType = pm.radioButtonGrp(labelArray2=['Convex Hull', 'Box Collison'],
-                                                 sl=self.opts['phyType'], nrb=2, cc=self.save)
+                self.phyType = pm.radioButtonGrp(labelArray3=['Convex Hull', 'Box', 'Sphere'],
+                                                 sl=self.opts['phyType'], nrb=3, cc=self.save,
+                                                 cw3=[94, 64, 64], width=250)
                 self.maxVerts = pm.intSliderGrp(field=True, l='Max Vertices:', v=self.opts['maxVerts'],
                                                 cl3=['left', 'left', 'left'], cw3=[64, 48, 128], cc=self.save)
                 pm.button(l='Add Hull', w=250, c=self._addHull)
+        self.save()
 
     def _addHull(self, *args):
-        if self.phyType.getSelect() == 1:
+        i = self.phyType.getSelect()
+        if i == 1:
             self.convexHull()
-        elif self.phyType.getSelect() == 2:
+        elif i == 2:
             self.boxHull()
+        elif i == 3:
+            self.sphereHull()
 
     def convexHull(self):
         sel = pm.selected()
-        print sel
         if not isinstance(sel[0], pm.nt.Transform):
             oldSel = sel
             sel = sel[0].node().getParent()
@@ -108,9 +111,8 @@ class PhyUI(object):
             sel = sel[0]
 
         inputMesh = sel.getShape()
-
         hullNode = pm.createNode('DDConvexHull')
-        outputNode = pm.createNode('mesh', n='UCX_%sShape' % sel)
+        outputNode = pm.createNode('mesh', n='UCX_{0}Shape_01'.format(sel))
 
         pm.connectAttr('%s.outMesh' % inputMesh, '%s.input[0].inputPolymesh' % hullNode)
         pm.connectAttr('%s.output' % hullNode, '%s.inMesh' % outputNode)
@@ -118,34 +120,53 @@ class PhyUI(object):
         hullNode.maxVertices.set(self.maxVerts.getValue())
         outputNode.getParent().setParent(sel)
         outputNode.getParent().translate.set(0, 0, 0)
-
         if not isinstance(oldSel[0], pm.nt.Transform):
             self.setComponents(oldSel, hullNode)
 
-    def comStr(self, sel):
-        comStr = []
-        for i in sel:
-            comStr.append(str(i.name().split('.')[1]))
-        return comStr
-
     def setComponents(self, sel, hullNode):
-        coms = self.comStr(sel)
+        coms = [str(i.name().split('.')[1]) for i in sel]
         hullNode.input[0].inputComponents.set(len(coms), *coms, type='componentList')
 
-    def boxHull(self):
-        sel = pm.selected()
-        bb = sel[0].getBoundingBox()
-        hull = pm.polyCube(w=bb.width(), h=bb.height(), d=bb.depth(), n='UCX_%s' % sel[0])
-        cnt = pm.objectCenter(sel[0])
-        hull[0].setTranslation(cnt)
+    @staticmethod
+    def _get_bounds(sel):
+        if sel > 1 and isinstance(sel[0], pm.Component):
+            transform = sel[0].node().getTransform()
+            t = pm.polyEvaluate(bc=True)
+            bb = pm.dt.BoundingBox(pm.dt.Point(t[0][0], t[1][0], t[2][0]), pm.dt.Point(t[0][1], t[1][1], t[2][1]))
+            verts = [i.getPosition() for i in pm.ls(pm.polyListComponentConversion(sel, tv=True), fl=True)]
+            center = sum(verts) / len(verts)
+        else:
+            transform = sel[0]
+            bb = sel[0].getBoundingBox()
+            center = pm.objectCenter(sel[0])
+        return bb, center, transform
 
+    def boxHull(self):
+        sel = pm.ls(sl=True, fl=True)
+        bb, cnt, transform = self._get_bounds(sel)
+        hull = pm.polyCube(w=bb.width(), h=bb.height(), d=bb.depth(), n='UCX_{0}_01'.format(transform))
+        hull[0].setTranslation(cnt)
         sg = pm.PyNode('initialShadingGroup')
         sg.remove(hull[0].getShape())
-        hull[0].setParent(sel[0])
+        hull[0].setParent(transform)
+
+    def sphereHull(self):
+        sel = pm.ls(sl=True, fl=True)
+        bb, cnt, transform = self._get_bounds(sel)
+        hull = pm.polySphere(radius=max(bb.width(), bb.height(), bb.depth()) / 2, sx=8, sy=8,
+                             n='UCX_{0}_01'.format(transform))
+        hull[0].setTranslation(cnt)
+        sg = pm.PyNode('initialShadingGroup')
+        sg.remove(hull[0].getShape())
+        hull[0].setParent(transform)
 
     def save(self, *args):
         self.opts['phyType'] = self.phyType.getSelect()
         self.opts['maxVerts'] = self.maxVerts.getValue()
+        if self.phyType.getSelect() == 1:
+            self.maxVerts.setEnable(True)
+        else:
+            self.maxVerts.setEnable(False)
 
 
 class FbxUI(object):
@@ -155,7 +176,7 @@ class FbxUI(object):
             with pm.columnLayout(width=250):
                 pm.text(l='Export List:')
                 pm.separator(height=4)
-                self.meshList = pm.textScrollList(height=120, width=250, ams=True, dkc=self._remove)
+                self.meshList = pm.textScrollList(height=250, width=250, ams=True, dkc=self._remove)
                 with pm.rowColumnLayout(nc=2, cw=[(1, 124), (2, 124)]):
                     pm.button(l='Add', c=self._add)
                     pm.button(l='Remove', c=self._remove)
