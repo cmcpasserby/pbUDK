@@ -92,6 +92,8 @@ class PhyUI(object):
         self.save()
 
     def _addHull(self, *args):
+        if not pm.selected():
+            return
         i = self.phyType.getSelect()
         if i == 1:
             self.convexHull()
