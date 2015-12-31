@@ -4,6 +4,10 @@ import json
 import pymel.core as pm
 
 
+title = 'Unreal Pipeline'
+version = '1.02'
+
+
 class UI(object):
     def __init__(self):
         if pm.window('pbudk', exists=True):
@@ -15,9 +19,10 @@ class UI(object):
                        'center': True,
                        'child': True,
                        'fbxPath': '%sdata/' % pm.workspace(q=True, rd=True),
-                       'presetFile': '%s/UDKexport/UDK-FBX.fbxexportpreset' % pm.internalVar(usd=True)}
+                       'presetFile': '%s/UDKexport/UDK-FBX.fbxexportpreset' % pm.internalVar(usd=True),
+                       'version': version}
 
-        with pm.window('pbudk', title='pbUDK', width=250, sizeable=False) as window:
+        with pm.window('pbudk', title="{0} - {1}".format(title, version), width=250, sizeable=False) as window:
             with pm.columnLayout() as self.wrapper:
                 opts = JSONDict(optspath, defaultdata)
                 PhyUI(opts)
@@ -28,6 +33,7 @@ class UI(object):
 
 class JSONDict(dict):
     def __init__(self, filename, defaults, *args, **kwargs):
+        super(JSONDict, self).__init__(**kwargs)
         self.filename = filename
         self.defaults = defaults
         self._load()
@@ -36,15 +42,22 @@ class JSONDict(dict):
     def _load(self):
         if os.path.isfile(self.filename) and os.path.getsize(self.filename) > 0:
             with open(self.filename, 'r') as f:
-                self.update(json.load(f))
+                data = json.load(f)
+                if 'version' in data and data['version'] == '1.02':
+                    self.update(data)
+                else:
+                    self._dumpdefaults()
         else:
-            with open(self.filename, 'w') as f:
-                json.dump(self.defaults, f, sort_keys=True, indent=4)
-            self._load()
+            self._dumpdefaults()
 
     def _dump(self):
         with open(self.filename, 'w') as f:
             json.dump(self, f, sort_keys=True, indent=4)
+
+    def _dumpdefaults(self):
+        with open(self.filename, 'w') as f:
+            json.dump(self.defaults, f, sort_keys=True, indent=4)
+        self._load()
 
     def __getitem__(self, key):
         return dict.__getitem__(self, key)
