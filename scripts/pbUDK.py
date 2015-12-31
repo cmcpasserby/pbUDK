@@ -242,7 +242,7 @@ class FbxUI(object):
             if hasattr(i.getParent(), 'pbExport') and i.getParent().pbExport.get() is True:
                 self.meshList.append(i.getParent())
 
-    def export(self, path, all=False, center=True, child=True):
+    def export(self, dirpath, all=False, center=True, child=True):
         # Load the fbx Preset
         pm.mel.FBXLoadExportPresetFile(f=self.opts.data['presetFile'])
         ext = '.fbx'
@@ -261,7 +261,7 @@ class FbxUI(object):
                 if center:
                     oldLoc = obj.getRotatePivot()
                     self.centerPiv(obj)
-                exportPath = path + os.sep + obj.name() + ext
+                exportPath = dirpath + os.sep + obj.name() + ext
                 if child:
                     children = obj.getChildren()
                     for i in children:
