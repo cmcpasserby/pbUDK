@@ -197,8 +197,8 @@ class FbxUI(object):
                 self.meshList.append(i.getParent())
 
     def export(self, dirpath, all=False, center=True, child=True):
-        # Load the fbx Preset
-        pm.mel.FBXLoadExportPresetFile(f=self.opts['presetFile'])
+        if os.path.isfile(self.opts['presetFile']):
+            pm.mel.FBXLoadExportPresetFile(f=self.opts['presetFile'])
         ext = '.fbx'
 
         if all:
