@@ -198,7 +198,7 @@ class FbxUI(object):
 
     def export(self, dirpath, all=False, center=True, child=True):
         # Load the fbx Preset
-        pm.mel.FBXLoadExportPresetFile(f=self.opts.data['presetFile'])
+        pm.mel.FBXLoadExportPresetFile(f=self.opts['presetFile'])
         ext = '.fbx'
 
         if all:
