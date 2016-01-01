@@ -280,3 +280,6 @@ class JSONDict(dict):
         for k, v in dict(*args, **kwargs).items():
             self[k] = v
         self._dump()
+
+if __name__ == "__main__":
+    UI()
