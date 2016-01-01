@@ -7,7 +7,7 @@ import pymel.core as pm
 pm.nt.Shape.getTransform = lambda x: x.getParent(generations=1)
 
 title = 'Unreal Pipeline'
-version = '1.02'
+version = '1.03'
 
 
 def UI():
@@ -61,7 +61,6 @@ class PhyUI(object):
         if not isinstance(sel[0], pm.nt.Transform):
             oldSel = sel
             sel = sel[0].node().getParent()
-            print sel
         else:
             oldSel = sel
             sel = sel[0]
@@ -139,7 +138,7 @@ class FbxUI(object):
 
                 pm.text(l='Export Path:')
                 with pm.rowColumnLayout(nc=2, cw=[(1, 215), (2, 32)]):
-                    self.fbxPath = pm.textField(text=self.opts['fbxPath'])
+                    self.fbxPath = pm.textField(text=self.opts['fbxPath'], cc=self._pathRefreash)
                     pm.button(l='...', c=self._path)
 
                 with pm.rowColumnLayout(nc=3):
@@ -154,11 +153,13 @@ class FbxUI(object):
         self._refresh()
 
     def _path(self, *args):
-        exportPath = path(pm.fileDialog2(dir=path, fm=3, okc='Select Folder', cap='Select Export Folder')[0])
-        try:
-            self.fbxPath.setText(exportPath)
-        except TypeError:
-            pass
+        exportPath = pm.fileDialog2(dir=path, fm=3, okc='Select Folder', cap='Select Export Folder')
+        if exportPath:
+            self.fbxPath.setText(exportPath[0])
+            self.opts['fbxPath'] = exportPath[0]
+
+    def _pathRefreash(self, text):
+        self.opts['fbxPath'] = text
 
     def _selected(self, *args):
         self.export(self.fbxPath.getText(), all=False, center=self.center.getValue(), child=self.child.getValue())
