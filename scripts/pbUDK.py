@@ -7,7 +7,7 @@ import pymel.core as pm
 pm.nt.Shape.getTransform = lambda x: x.getParent(generations=1)
 
 title = 'Unreal Pipeline'
-version = '1.03'
+version = '1.04'
 
 
 def UI():
@@ -250,7 +250,7 @@ class JSONDict(dict):
         if os.path.isfile(self.filename) and os.path.getsize(self.filename) > 0:
             with open(self.filename, 'r') as f:
                 data = json.load(f)
-                if 'version' in data and data['version'] == '1.02':
+                if 'version' in data and data['version'] == version:
                     self.update(data)
                 else:
                     self._dumpdefaults()
