@@ -7,7 +7,7 @@ import pymel.core as pm
 pm.nt.Shape.getTransform = lambda x: x.getParent(generations=1)
 
 title = 'Unreal Pipeline'
-version = '1.04'
+version = '1.05'
 
 
 def UI():
@@ -176,11 +176,12 @@ class FbxUI(object):
     def _add(self, *args):
         sel = pm.selected()
         for i in sel:
-            try:
-                i.pbExport.set(True)
-            except:
-                i.addAttr('pbExport', at='bool')
-                i.pbExport.set(True)
+            if isinstance(i, pm.nt.Transform):
+                try:
+                    i.pbExport.set(True)
+                except:
+                    i.addAttr('pbExport', at='bool')
+                    i.pbExport.set(True)
         self._refresh()
 
     def _remove(self, *args):
@@ -224,13 +225,14 @@ class FbxUI(object):
                             pm.select(i, add=True)
                 pm.mel.FBXExport(f=exportPath, s=True)
                 if center:
-                    obj.translateBy([oldLoc[0], oldLoc[1], oldLoc[2]])
+                    obj.setTranslation([oldLoc[0], oldLoc[1], oldLoc[2]])
 
     def centerPiv(self, obj):
         pm.select(obj)
         pm.makeIdentity(apply=True, t=True, r=True, s=True, n=False)
         pos = obj.getRotatePivot()
         obj.translate.set(-1 * pos.x, -1 * pos.y, -1 * pos.z)
+        pm.makeIdentity(apply=True, t=True, r=True, s=True, n=False)
 
     def save(self, *args):
         self.opts['center'] = self.center.getValue()
