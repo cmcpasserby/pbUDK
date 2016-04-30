@@ -7,7 +7,7 @@ import pymel.core as pm
 pm.nt.Shape.getTransform = lambda x: x.getParent(generations=1)
 
 title = 'Unreal Pipeline'
-version = '1.03'
+version = '1.06'
 
 
 def UI():
@@ -21,9 +21,13 @@ def UI():
                    'child': True,
                    'fbxPath': '%sdata/' % pm.workspace(q=True, rd=True),
                    'presetFile': '%s/UDKexport/UDK-FBX.fbxexportpreset' % pm.internalVar(usd=True),
-                   'version': version}
+                   'version': version,
+                   'prefix': False,
+                   'prefix_text': '',
+                   'suffix': False,
+                   'suffix_text': ''}
 
-    with pm.window('pbudk', title="{0} - {1}".format(title, version), width=250, sizeable=False) as window:
+    with pm.window('pbudk', title="{0} - {1}".format(title, version), width=250, sizeable=True) as window:
         with pm.columnLayout():
             opts = JSONDict(optspath, defaultdata)
             PhyUI(opts)
@@ -136,14 +140,20 @@ class FbxUI(object):
                     pm.button(l='Add', c=self._add)
                     pm.button(l='Remove', c=self._remove)
 
+                with pm.rowColumnLayout(nc=2, cw=[(1, 124), (2,124)]):
+                    self.prefix = pm.checkBox(label='Prefix', value=self.opts['prefix'], cc=self.save)
+                    self.suffix = pm.checkBox(label='Suffix', value=self.opts['suffix'], cc=self.save)
+                    self.prefix_text = pm.textField(en=self.prefix.getValue(), text=self.opts['prefix_text'], cc=self.save)
+                    self.suffix_text = pm.textField(en=self.suffix.getValue(), text=self.opts['suffix_text'], cc=self.save)
+
                 pm.text(l='Export Path:')
                 with pm.rowColumnLayout(nc=2, cw=[(1, 215), (2, 32)]):
                     self.fbxPath = pm.textField(text=self.opts['fbxPath'], cc=self._pathRefreash)
                     pm.button(l='...', c=self._path)
 
                 with pm.rowColumnLayout(nc=3):
-                    self.center = pm.checkBox(label='Move to Orgin', v=self.opts['center'])
-                    self.child = pm.checkBox(label='Export Childern', v=self.opts['child'])
+                    self.center = pm.checkBox(label='Move to Orgin', v=self.opts['center'], cc=self.save)
+                    self.child = pm.checkBox(label='Export Childern', v=self.opts['child'], cc=self.save)
                     pm.button(l='FBXPreset', c=self._fbxPreset)
 
                 with pm.rowColumnLayout(nc=2, cw=[(1, 124), (2, 124)]):
@@ -176,11 +186,12 @@ class FbxUI(object):
     def _add(self, *args):
         sel = pm.selected()
         for i in sel:
-            try:
-                i.pbExport.set(True)
-            except:
-                i.addAttr('pbExport', at='bool')
-                i.pbExport.set(True)
+            if isinstance(i, pm.nt.Transform):
+                try:
+                    i.pbExport.set(True)
+                except:
+                    i.addAttr('pbExport', at='bool')
+                    i.pbExport.set(True)
         self._refresh()
 
     def _remove(self, *args):
@@ -216,7 +227,7 @@ class FbxUI(object):
                 if center:
                     oldLoc = obj.getRotatePivot()
                     self.centerPiv(obj)
-                exportPath = dirpath + os.sep + obj.name() + ext
+                exportPath = self._get_filename(dirpath, obj.name(), ext)
                 if child:
                     children = obj.getChildren()
                     for i in children:
@@ -224,18 +235,35 @@ class FbxUI(object):
                             pm.select(i, add=True)
                 pm.mel.FBXExport(f=exportPath, s=True)
                 if center:
-                    obj.translateBy([oldLoc[0], oldLoc[1], oldLoc[2]])
+                    obj.setTranslation([oldLoc[0], oldLoc[1], oldLoc[2]])
+
+    def _get_filename(self, dir, name, ext):
+        file_name = "{0}{1}{2}{3}".format(
+            self.prefix_text.getText() if self.prefix.getValue() else "",
+            name,
+            self.suffix_text.getText() if self.suffix.getValue() else "",
+            ext
+        )
+        return dir + os.sep + file_name;
 
     def centerPiv(self, obj):
         pm.select(obj)
         pm.makeIdentity(apply=True, t=True, r=True, s=True, n=False)
         pos = obj.getRotatePivot()
         obj.translate.set(-1 * pos.x, -1 * pos.y, -1 * pos.z)
+        pm.makeIdentity(apply=True, t=True, r=True, s=True, n=False)
 
     def save(self, *args):
+        self.prefix_text.setEnable(self.prefix.getValue())
+        self.suffix_text.setEnable(self.suffix.getValue())
+
         self.opts['center'] = self.center.getValue()
         self.opts['child'] = self.child.getValue()
         self.opts['fbxPath'] = self.fbxPath.getText()
+        self.opts['prefix'] = self.prefix.getValue()
+        self.opts['prefix_text'] = self.prefix_text.getText()
+        self.opts['suffix'] = self.suffix.getValue()
+        self.opts['suffix_text'] = self.suffix_text.getText()
 
 
 class JSONDict(dict):
@@ -250,7 +278,7 @@ class JSONDict(dict):
         if os.path.isfile(self.filename) and os.path.getsize(self.filename) > 0:
             with open(self.filename, 'r') as f:
                 data = json.load(f)
-                if 'version' in data and data['version'] == '1.02':
+                if 'version' in data and data['version'] == version:
                     self.update(data)
                 else:
                     self._dumpdefaults()
