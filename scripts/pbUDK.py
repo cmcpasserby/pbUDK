@@ -7,7 +7,7 @@ import pymel.core as pm
 pm.nt.Shape.getTransform = lambda x: x.getParent(generations=1)
 
 title = 'Unreal Pipeline'
-version = '1.06'
+version = '1.07'
 
 
 def UI():
@@ -136,9 +136,10 @@ class FbxUI(object):
                 pm.text(l='Export List:')
                 pm.separator(height=4)
                 self.meshList = pm.textScrollList(height=250, width=250, ams=True, dkc=self._remove)
-                with pm.rowColumnLayout(nc=2, cw=[(1, 124), (2, 124)]):
+                with pm.rowColumnLayout(nc=3, cw=[(1, 82), (2, 82), (3, 82)]):
                     pm.button(l='Add', c=self._add)
                     pm.button(l='Remove', c=self._remove)
+                    pm.button(l='Clear', c=self._clear)
 
                 with pm.rowColumnLayout(nc=2, cw=[(1, 124), (2,124)]):
                     self.prefix = pm.checkBox(label='Prefix', value=self.opts['prefix'], cc=self.save)
@@ -201,9 +202,16 @@ class FbxUI(object):
             i.pbExport.delete()
         self._refresh()
 
+    def _clear(self, *args):
+        sel = pm.ls()
+        for i in sel:
+            if hasattr(i, 'pbExport'):
+                i.pbExport.delete()
+        self._refresh()
+
     def _refresh(self):
         self.meshList.removeAll()
-        sel = pm.ls(type=pm.nt.Mesh)
+        sel = pm.ls(type=pm.nt.Transform)
         for i in sel:
             if hasattr(i.getParent(), 'pbExport') and i.getParent().pbExport.get() is True:
                 self.meshList.append(i.getParent())
