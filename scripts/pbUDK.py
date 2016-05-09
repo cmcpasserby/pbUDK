@@ -7,7 +7,7 @@ import pymel.core as pm
 pm.nt.Shape.getTransform = lambda x: x.getParent(generations=1)
 
 title = 'Unreal Pipeline'
-version = '1.06'
+version = '1.07'
 
 
 def UI():
