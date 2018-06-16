@@ -25,7 +25,7 @@ Export path just sets a directory to dump all export fbx files into, the file na
 Move to origin, moves objects to 0 0 0 XYZ in the scene, before export and places them back to their old locations after export. Export children exports any meshes parented to the selected mesh I put this option in here so it will auto export collision hulls made with this tool. 
 The tool comes with a default FBX export preset file that has good settings for UDK, but this can be set to use one made by the user with the FBXPreset button.
 
-![pbUDK](http://rightsomegoodgames.ca/assets/images/pbUDK.jpg)
+![pbUDK](https://rsggassets.nyc3.digitaloceanspaces.com/assets/images/pbUDK.jpg)
 
 Credits
 -------
